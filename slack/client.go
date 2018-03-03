@@ -19,9 +19,9 @@ type Client struct {
 }
 
 // NewClient creates a new slack client.
-func NewClient(token string) *Client {
+func NewClient(oauthToken string) *Client {
 	return &Client{
-		Token:   token,
+		Token:   oauthToken,
 		BaseURL: baseURL,
 	}
 }
