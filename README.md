@@ -12,18 +12,40 @@ It then posts to slack or standard out.
 
 Install with `go get github.com/chuckha/cmd/renthelper`
 
-### Run
+### Configuration
 
-Run with a command like this:
+```json
+{
+    "avalon_username": "avalon_login@example.com",
+    "avalon_password": "avalon_password",
+    "renters": "p1,p2,p3",
+    "rent_amounts": "200,300,400",
+    "slack_channel_id": "S0M3CH4N",
+    "slack_oauth_token": "oauthtoken"
+}
+```
+
+If you omit the slack id/token renthelper will print to stdout.
+
+#### Configuration directories
+
+Put configuration files in:
+
+- `/etc/renthelpers/*.json`
+- `$HOME/.renthelpers/*.json`
+
+and `renthelper` will load them automatically.
+
+#### Specify a custom configuration
+
+Create a configuration file and pass it in with the `-config` flag.
+
+### Run with a custom configuration
 
 ```
-renthelper \
--avalon-username=emailaddress@example.com \
--avalon-password=somesillypassword \
--renters=person1,person2,person3 \
--rent-amounts=1000,1100,1200 \
--slack-channel-id=SLACKCHANNELID \
--slack-token=some-slack-oauth-token
+renthelper -config config.json
 ```
+
+##
 
 [avalon]: https://www.avaloncommunities.com/
