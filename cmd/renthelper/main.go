@@ -25,6 +25,7 @@ var (
 
 func main() {
 	configFile := flag.String(configFileFlag, "", "path to a config file")
+	flag.Parse()
 	cfg, err := loadConfig(*configFile)
 	if err != nil {
 		fmt.Println("error loading config", err)
@@ -37,7 +38,6 @@ func main() {
 		}
 		os.Exit(1)
 	}
-	fmt.Println(cfg)
 
 	// Initial data set up.
 	ts, err := avalon.GetTenants(cfg.Renters, cfg.RentAmounts)
@@ -143,10 +143,10 @@ func (c *Config) valid() []error {
 		errlist = append(errlist, fmt.Errorf("avalon username must be set"))
 	}
 	if c.RentAmounts == "" {
-		errlist = append(errlist, fmt.Errorf("rent amounts must be set (example: 800,700,1000"))
+		errlist = append(errlist, fmt.Errorf("rent amounts must be set (example: 800,700,1000)"))
 	}
 	if c.Renters == "" {
-		errlist = append(errlist, fmt.Errorf("renters must be set (example: person1,person2,person3"))
+		errlist = append(errlist, fmt.Errorf("renters must be set (example: person1,person2,person3)"))
 	}
 	return errlist
 }
