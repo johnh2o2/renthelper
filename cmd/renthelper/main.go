@@ -1,4 +1,4 @@
-package renthelper
+package main
 
 import (
 	"encoding/json"
