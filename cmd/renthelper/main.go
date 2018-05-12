@@ -1,36 +1,40 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path"
-	"path/filepath"
-	"strings"
 
 	"github.com/chuckha/renthelper/avalon"
 	"github.com/chuckha/renthelper/slack"
+
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 const (
-	configFileFlag = "config"
-)
-
-var (
-	globalConfigPath = path.Join("/", "etc", "renthelper")
-	userConfigPath   = path.Join(os.Getenv("HOME"), ".renthelper")
+	configFileFlag     = "config"
+	avalonUsernameEnv  = "AVALON_USERNAME"
+	avalonPasswordEnv  = "AVALON_PASSWORD"
+	rentersEnv         = "RENTERS"
+	rentAmountsEnv     = "RENT_AMOUNTS"
+	slackChannelIDEnv  = "SLACK_CHANNEL_ID"
+	slackOauthTokenEnv = "SLACK_OAUTH_TOKEN"
 )
 
 func main() {
-	configFile := flag.String(configFileFlag, "", "path to a config file")
-	flag.Parse()
-	cfg, err := loadConfig(*configFile)
-	if err != nil {
-		fmt.Println("error loading config", err)
-		os.Exit(1)
+	lambda.Start(HandleRequest)
+}
+
+func HandleRequest() (string, error) {
+	cfg := &Config{
+		AvalonUsername:  os.Getenv(avalonUsernameEnv),
+		AvalonPassword:  os.Getenv(avalonPasswordEnv),
+		Renters:         os.Getenv(rentersEnv),
+		RentAmounts:     os.Getenv(rentAmountsEnv),
+		SlackChannelID:  os.Getenv(slackChannelIDEnv),
+		SlackOauthToken: os.Getenv(slackOauthTokenEnv),
 	}
+
 	errs := cfg.valid()
 	if len(errs) != 0 {
 		for _, err := range errs {
@@ -63,15 +67,16 @@ func main() {
 		panic(err)
 	}
 
-	// Print to stdout if we can't send the mnessage to slack.
+	// Print to stdout if we can't send the message to slack.
 	if cfg.SlackChannelID == "" || cfg.SlackOauthToken == "" {
 		fmt.Println(message)
-		return
+		return "", nil
 	}
 
 	// Create the slack client and post the message.
 	sc := slack.NewClient(cfg.SlackOauthToken)
 	sc.Post(cfg.SlackChannelID, message)
+	return "", nil
 }
 
 // requiredStringFlag ensures that the var has a non empty value.
@@ -91,47 +96,6 @@ type Config struct {
 	RentAmounts     string `json:"rent_amounts"`
 	SlackChannelID  string `json:"slack_channel_id"`
 	SlackOauthToken string `json:"slack_oauth_token"`
-}
-
-func loadConfig(explicit string) (*Config, error) {
-	var finalConfig Config
-
-	// Quick exit if we've defined an explicit conifg
-	if explicit != "" {
-		data, err := ioutil.ReadFile(explicit)
-		if err != nil {
-			return nil, fmt.Errorf("error with explicit config file: %v", err)
-		}
-
-		return &finalConfig, json.Unmarshal(data, &finalConfig)
-	}
-
-	searchPaths := []string{globalConfigPath, userConfigPath}
-
-	// Go through each config path and load a config file. Each subsequent config will override the previous one.
-	for _, path := range searchPaths {
-		if err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-			// bail if we're in an error state
-			if err != nil {
-				return err
-			}
-
-			// If it's not a .json file we don't care about it
-			if !strings.HasSuffix(info.Name(), ".json") {
-				return nil
-			}
-
-			data, err := ioutil.ReadFile(path)
-			if err != nil {
-				return err
-			}
-
-			return json.Unmarshal(data, &finalConfig)
-		}); err != nil {
-			return nil, err
-		}
-	}
-	return &finalConfig, nil
 }
 
 func (c *Config) valid() []error {
