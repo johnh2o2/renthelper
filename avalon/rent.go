@@ -78,7 +78,7 @@ var balanceTemplate = "```" + `{{ range $element := .}}{{.Name}}: {{.Rent}}
 {{end}}` + "```"
 
 func balanceFromHTML(balance []byte) (*BalanceSheet, error) {
-	balanceRegex := regexp.MustCompile(`\$([\d.,]+)</div>`)
+	balanceRegex := regexp.MustCompile(`\$([\d.,]+)`)
 	b := balanceRegex.FindSubmatch(balance)
 	if b == nil {
 		return nil, fmt.Errorf("Unknown balance")
