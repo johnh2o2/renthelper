@@ -6,21 +6,20 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 const (
 	baseURL = "https://www.avalonaccess.com/"
 )
 
-type Doer interface {
-	Do(*http.Request) (*http.Response, error)
-}
-
 type Client struct {
 	Host string
-	Doer
+	*http.Client
 }
 
 func NewClient(username, password string) (*Client, error) {
@@ -29,8 +28,8 @@ func NewClient(username, password string) (*Client, error) {
 		return nil, fmt.Errorf("failed to get http client")
 	}
 	c := &Client{
-		Host: baseURL,
-		Doer: client,
+		Host:   baseURL,
+		Client: client,
 	}
 	err = c.Login(username, password)
 	if err != nil {
@@ -42,20 +41,33 @@ func NewClient(username, password string) (*Client, error) {
 // login sets the cookies on the avalon client
 func (c *Client) Login(username, password string) error {
 	loginURL := fmt.Sprintf("%v%v", c.Host, "UserProfile/LogOn")
+	token, err := c.getLoginToken()
+	if err != nil {
+		return err
+	}
 	data := url.Values{}
 	data.Add("UserName", username)
 	data.Add("password", password)
-	r, err := http.NewRequest("POST", loginURL, strings.NewReader(data.Encode()))
-	if err != nil {
-		return fmt.Errorf("could not get new request: %v", err)
-	}
-	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := c.Do(r)
+	data.Add("__RequestVerificationToken", token)
+	resp, err := c.Post(loginURL, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
 	if err != nil {
 		return fmt.Errorf("failed to get response from POST: %v", err)
 	}
+	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
+		fmt.Println("Got a redirect")
+		fmt.Println(resp.StatusCode)
+		return errors.New("implement the redirect or post directly to /Dashboard?")
+	}
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("bad response: %v, [%v]", r.URL.String(), resp.StatusCode)
+		b, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Printf("error reading body: %v", err)
+			return err
+		}
+		fmt.Println("============== login response ==============")
+		fmt.Println(string(b))
+		fmt.Println("============== end login response ==============")
+		return fmt.Errorf("bad response: %v, [%v]", loginURL, resp.StatusCode)
 	}
 	return nil
 }
@@ -105,4 +117,24 @@ func clientWithCookieJar() (*http.Client, error) {
 	return &http.Client{
 		Jar: jar,
 	}, nil
+}
+
+func (c *Client) getLoginToken() (string, error) {
+	tokenRe := regexp.MustCompile(`<input name="__RequestVerificationToken" type="hidden" value="([a-zA-Z0-9-_]*)" />`)
+	resp, err := c.Get("https://www.avalonaccess.com/UserProfile/LogOn")
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+	found := tokenRe.FindSubmatch(b)
+	if len(found) == 0 {
+		fmt.Println("No results")
+		fmt.Println("============== login form response ==============")
+		fmt.Println(string(b))
+		fmt.Println("============== end login form response ==============")
+	}
+	return strings.TrimSpace(string(found[1])), nil
 }
