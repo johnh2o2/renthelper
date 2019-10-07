@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"math"
 )
 
 type BalanceSheet struct {
@@ -64,6 +65,7 @@ func (b *BalanceSheet) SplitBalance(ts Tenants) (string, error) {
 	evenSplitLeftover := remaining / float64(len(ts))
 	for _, tenant := range ts {
 		tenant.Rent += evenSplitLeftover
+		tenant.Rent = math.Round(tenant.Rent*100)/100
 	}
 	t, err := template.New("sheet").Parse(balanceTemplate)
 	var buf bytes.Buffer
