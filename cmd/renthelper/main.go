@@ -17,6 +17,7 @@ const (
 	avalonPasswordEnv  = "AVALON_PASSWORD"
 	rentersEnv         = "RENTERS"
 	rentAmountsEnv     = "RENT_AMOUNTS"
+	amenAmountsEnv     = "AMENITIES_AMOUNTS"
 	slackChannelIDEnv  = "SLACK_CHANNEL_ID"
 	slackOauthTokenEnv = "SLACK_OAUTH_TOKEN"
 )
@@ -31,6 +32,7 @@ func HandleRequest() (string, error) {
 		AvalonPassword:  os.Getenv(avalonPasswordEnv),
 		Renters:         os.Getenv(rentersEnv),
 		RentAmounts:     os.Getenv(rentAmountsEnv),
+		AmenAmounts:     os.Getenv(amenAmountsEnv),
 		SlackChannelID:  os.Getenv(slackChannelIDEnv),
 		SlackOauthToken: os.Getenv(slackOauthTokenEnv),
 	}
@@ -44,7 +46,7 @@ func HandleRequest() (string, error) {
 	}
 
 	// Initial data set up.
-	ts, err := avalon.GetTenants(cfg.Renters, cfg.RentAmounts)
+	ts, err := avalon.GetTenants(cfg.Renters, cfg.RentAmounts, cfg.AmenAmounts)
 	if err != nil {
 		panic(err)
 	}
@@ -94,6 +96,7 @@ type Config struct {
 	AvalonPassword  string `json:"avalon_password"`
 	Renters         string `json:"renters"`
 	RentAmounts     string `json:"rent_amounts"`
+	AmenAmounts     string `json:"amenities_amounts"`
 	SlackChannelID  string `json:"slack_channel_id"`
 	SlackOauthToken string `json:"slack_oauth_token"`
 }
@@ -108,6 +111,9 @@ func (c *Config) valid() []error {
 	}
 	if c.RentAmounts == "" {
 		errlist = append(errlist, fmt.Errorf("rent amounts must be set (example: 800,700,1000)"))
+	}
+	if c.AmenAmounts == "" {
+		errlist = append(errlist, fmt.Errorf("amenities amounts must be set. if none, enter zero for each (example: 0,0,0)"))
 	}
 	if c.Renters == "" {
 		errlist = append(errlist, fmt.Errorf("renters must be set (example: person1,person2,person3)"))
