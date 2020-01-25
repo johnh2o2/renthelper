@@ -30,12 +30,16 @@ func (t Tenants) totalRent() float64 {
 }
 
 // Setup. Mostly a hack for passing in RENTERS and RENT_AMOUNTS instead of a config file.
-func GetTenants(renters, rentAmounts string) (Tenants, error) {
+func GetTenants(renters, rentAmounts string, amenAmounts string) (Tenants, error) {
 	out := Tenants{}
 	rs := strings.Split(renters, ",")
 	amts := strings.Split(rentAmounts, ",")
+	amen := strings.Split(amenAmounts, ",")
 	if len(rs) != len(amts) {
 		return nil, fmt.Errorf("rent and amounts must be same size: %v vs %v", rs, amts)
+	}
+	if len(amen) != len(amts) {
+		return nil, fmt.Errorf("amenities amounts and rent amounts must be same size: %v vs %v", amen, amts)
 	}
 	amounts := make([]float64, len(amts))
 	for i, amt := range amts {
@@ -44,6 +48,12 @@ func GetTenants(renters, rentAmounts string) (Tenants, error) {
 			return nil, fmt.Errorf("failed to parse %v: %v", amt, err)
 		}
 		amounts[i] = amount
+		// Add individual amenities amount to each renter's rent
+		amenAmount, err := strconv.ParseFloat(amen[i], 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse %v: %v", amenAmount, err)
+		}
+		amounts[i] += amenAmount
 	}
 	for i, renter := range rs {
 		out = append(out, &Tenant{
