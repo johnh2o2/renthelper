@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chuckha/renthelper/avalon"
-	"github.com/chuckha/renthelper/slack"
+	"github.com/johnh2o2/renthelper/avalon"
+	"github.com/johnh2o2/renthelper/slack"
 
 	"github.com/aws/aws-lambda-go/lambda"
 )

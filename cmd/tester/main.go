@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/chuckha/renthelper/avalon"
+	"github.com/johnh2o2/renthelper/avalon"
 )
 
 const (
