@@ -1,4 +1,4 @@
-module github.com/chuckha/renthelper
+module github.com/johnh2o2/renthelper
 
 go 1.12
 
