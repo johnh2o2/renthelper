@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httputil"
 )
 
 const (
@@ -45,6 +46,13 @@ func (c *Client) Post(channel, message string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get signed request: %v", err)
 	}
+	
+	requestDump, err := httputil.DumpRequest(req, true)
+	if err != nil {
+  		fmt.Println(err)
+	}
+	fmt.Println(string(requestDump))
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send request: %v", err)
